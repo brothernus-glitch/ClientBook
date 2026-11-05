@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Yummy Layers · Client Book</title>
+<link rel="manifest" href="/manifest.webmanifest"><meta name="theme-color" content="#F7E9DF"><link rel="apple-touch-icon" href="/icon-192.png"><script src="/config.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#F7E9DF;--card:#FCF8F5;--ink:#242120;--muted:#6f655e;--blue:#1AA3EA;--blueink:#fff;--line:#e6d3c6;--warn:#c4571f;--ok:#2f8f5b;color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1c1917;--card:#2a2522;--ink:#f4ece6;--muted:#b3a79f;--blue:#4cb8f2;--blueink:#10222e;--line:#40372f;--warn:#f0905a;--ok:#5cc58b;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#1c1917;--card:#2a2522;--ink:#f4ece6;--muted:#b3a79f;--blue:#4cb8f2;--blueink:#10222e;--line:#40372f;--warn:#f0905a;--ok:#5cc58b;color-scheme:dark}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.wrap{max-width:720px;margin:0 auto;padding:16px}
+header{text-align:center;padding:8px 0 14px}
+.brand{font-family:"Dancing Script",cursive,serif;font-size:2.4rem;color:var(--blue);line-height:1}
+.tag{letter-spacing:.2em;font-size:.72rem;color:var(--muted);margin-top:4px}
+.tabs{display:flex;gap:8px;margin:6px 0 14px}
+.tab{flex:1;padding:11px;border-radius:12px;border:1.5px solid var(--ink);background:transparent;color:var(--ink);font:inherit;font-weight:600;cursor:pointer}
+.tab.on{background:var(--ink);color:var(--bg)}
+button{font:inherit;cursor:pointer}
+.btn{background:var(--blue);color:var(--blueink);border:0;border-radius:10px;padding:10px 14px;font-weight:600}
+.btn.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--line)}
+.btn.sm{padding:7px 11px;font-size:.88rem}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:13px 14px;margin-bottom:10px}
+.row{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.muted{color:var(--muted);font-size:.9rem}
+.pill{display:inline-block;border:1px solid var(--line);border-radius:99px;padding:2px 10px;font-size:.8rem;margin:3px 4px 0 0;color:var(--muted)}
+.days{font-weight:700;color:var(--blue);min-width:62px;text-align:center}
+.days.soon{color:var(--warn)}
+.bar{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+input,select,textarea{font:inherit;color:var(--ink);background:var(--card);border:1.5px solid var(--line);border-radius:10px;padding:9px 10px;width:100%}
+.bar input,.bar select{flex:1;min-width:120px;width:auto}
+label{display:block;font-size:.85rem;font-weight:600;margin:12px 0 4px}
+dialog{border:0;border-radius:16px;padding:0;background:var(--bg);color:var(--ink);width:min(560px,94vw);max-height:92vh}
+dialog::backdrop{background:rgba(0,0,0,.5)}
+.dlg{padding:16px}
+.dr{display:grid;grid-template-columns:1fr 1fr;gap:8px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px;margin-bottom:8px}
+.dr .full{grid-column:1/-1}
+.sent{color:var(--ok);font-weight:600;font-size:.85rem}
+.empty{text-align:center;color:var(--muted);padding:30px 10px}
+h3{margin:18px 0 8px;font-size:.8rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header><img src="/logo.jpg" alt="Yummy Layers – Just Dough It" style="width:120px;height:120px;border-radius:50%"><div class="tag">CLIENT BOOK</div></header>
+<div class="tabs"><button class="tab on" id="t-up" onclick="setView('up')">Coming up</button><button class="tab" id="t-cl" onclick="setView('cl')">Clients</button></div>
+<div id="main"></div>
+<div class="row" style="margin-top:20px"><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn ghost sm" onclick="openBackup()">Backup</button><button class="btn ghost sm" onclick="openSync()">Sync</button><button class="btn ghost sm" id="inst" style="display:none" onclick="doInstall()">Install app</button></div><button class="btn sm" onclick="openForm()">+ New client</button></div><div class="muted" id="st" style="margin-top:10px;text-align:center"></div>
+</div>
+
+<dialog id="dlg"><div class="dlg" id="dlgc"></div></dialog>
+
+<script>
+const MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const S={clients:[],dead:[],view:'up',win:30,q:'',quiet:false,form:null};
+const today=new Date();today.setHours(0,0,0,0);
+const $=s=>document.querySelector(s);
+const esc=t=>String(t==null?'':t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid=()=>Math.random().toString(36).slice(2,10);
+function load(){try{S.clients=JSON.parse(localStorage.getItem('yl_clients')||'[]');S.dead=JSON.parse(localStorage.getItem('yl_dead')||'[]')}catch(e){S.clients=[];S.dead=[]}}
+function persist(){try{localStorage.setItem('yl_clients',JSON.stringify(S.clients));localStorage.setItem('yl_dead',JSON.stringify(S.dead))}catch(e){}}
+function save(){persist();queueSync()}
+function waNum(p){let n=(p||'').replace(/[^\d]/g,'');if(!n)return'';if(n.startsWith('00'))n=n.slice(2);else if(n.startsWith('0'))n='256'+n.slice(1);else if(n.length===9)n='256'+n;return n}
+function nextOcc(dt){const y=today.getFullYear();let o=new Date(y,dt.m-1,dt.d);if(o<today)o=new Date(y+1,dt.m-1,dt.d);return{o,days:Math.round((o-today)/864e5),yr:o.getFullYear()}}
+const fmt=o=>o.toLocaleDateString('en-GB',{day:'numeric',month:'short'});
+function ago(s){if(!s)return'No order recorded';const d=Math.round((today-new Date(s+'T00:00:00'))/864e5);if(d<0)return'Order on '+s;if(d===0)return'Last order: today';if(d<60)return`Last order: ${d} day${d==1?'':'s'} ago`;if(d<730)return`Last order: ${Math.round(d/30)} months ago`;return`Last order: ${Math.round(d/365)} years ago`}
+function daysSince(s){return s?Math.round((today-new Date(s+'T00:00:00'))/864e5):99999}
+function label(dt){return dt.type==='Other'?'Special day':dt.type}
+function msg(c,dt,occ){const first=c.name.split(' ')[0];const own=!dt.who||/^(self|herself|himself|her|him|me|client)$/i.test(dt.who.trim());const when=fmt(occ.o);
+ if(own){if(dt.type==='Birthday')return`Happy birthday ${first}! 🎂 Wishing you a day as sweet as cake. With love, Yummy Layers`;if(dt.type==='Anniversary')return`Happy anniversary ${first}! 💙 Wishing you many more sweet years. With love, Yummy Layers`;return`Hello ${first}, thinking of you on your special day (${when}). Warm wishes from Yummy Layers 🎂`}
+ const w=dt.who.trim();const what=dt.type==='Birthday'?`${w}’s birthday`:dt.type==='Anniversary'?`${w}’s anniversary`:`${w}’s special day`;
+ return`Hello ${first}, we remembered that ${what} is coming up on ${when}. 🎂 Would you like us to bake something special? – Yummy Layers`}
+function setView(v){S.view=v;$('#t-up').classList.toggle('on',v==='up');$('#t-cl').classList.toggle('on',v==='cl');render()}
+function render(){S.view==='up'?renderUp():renderCl()}
+function renderUp(){
+ const items=[];S.clients.forEach(c=>(c.dates||[]).forEach(dt=>{const o=nextOcc(dt);if(o.days<=S.win)items.push({c,dt,o})}));
+ items.sort((a,b)=>a.o.days-b.o.days);
+ let h=`<div class="bar"><select onchange="S.win=+this.value;render()">${[7,14,30,60,90].map(n=>`<option value="${n}"${S.win===n?' selected':''}>Next ${n} days</option>`).join('')}</select></div>`;
+ if(!items.length)h+=`<div class="empty">Nothing coming up in the next ${S.win} days.<br>Add clients and their special dates to see reminders here.</div>`;
+ items.forEach(({c,dt,o})=>{const num=waNum(c.phone);const done=dt.sent===o.o.yr;const yrs=dt.y?` · turning ${o.o.yr-dt.y}`:'';const who=dt.who?` · ${esc(dt.who)}`:'';
+  h+=`<div class="card"><div class="row"><div><b>${esc(c.name)}</b><div class="muted">${label(dt)}${who}${yrs}</div><div class="muted">${fmt(o.o)} · ${esc(ago(c.last))}</div></div><div class="days ${o.days<=3?'soon':''}">${o.days===0?'Today':o.days===1?'Tomorrow':o.days+' days'}</div></div>
+  <div class="row" style="margin-top:10px;justify-content:flex-start">${num?`<a class="btn sm" style="text-decoration:none" target="_blank" rel="noopener" href="https://wa.me/${num}?text=${encodeURIComponent(msg(c,dt,o))}">WhatsApp</a>`:`<span class="muted">No phone saved</span>`}
+  <button class="btn ghost sm" onclick="markSent('${c.id}','${dt.id}',${o.o.yr})">${done?'Sent ✓ (undo)':'Mark as sent'}</button><button class="btn ghost sm" onclick="openForm('${c.id}')">Open</button></div></div>`});
+ $('#main').innerHTML=h}
+function markSent(cid,did,yr){const c=S.clients.find(x=>x.id===cid);const d=c.dates.find(x=>x.id===did);d.sent=d.sent===yr?null:yr;c.updatedAt=Date.now();save();render()}
+function renderCl(){
+ let list=S.clients.filter(c=>{const q=S.q.toLowerCase();return(!q||(c.name+' '+(c.phone||'')+' '+(c.notes||'')).toLowerCase().includes(q))&&(!S.quiet||daysSince(c.last)>=90)});
+ list.sort((a,b)=>a.name.localeCompare(b.name));
+ let h=`<div class="bar"><input placeholder="Search name, phone or notes" value="${esc(S.q)}" oninput="S.q=this.value;renderList()" id="q"><button class="btn ${S.quiet?'':'ghost'} sm" onclick="S.quiet=!S.quiet;render()">Quiet 90+ days</button></div><div id="list"></div>`;
+ $('#main').innerHTML=h;renderList()}
+function renderList(){
+ const q=S.q.toLowerCase();let list=S.clients.filter(c=>(!q||(c.name+' '+(c.phone||'')+' '+(c.notes||'')).toLowerCase().includes(q))&&(!S.quiet||daysSince(c.last)>=90)).sort((a,b)=>a.name.localeCompare(b.name));
+ const el=$('#list');if(!el)return;
+ if(!list.length){el.innerHTML=`<div class="empty">${S.clients.length?'No matches.':'No clients yet. Tap “+ New client” to add the first one.'}</div>`;return}
+ el.innerHTML=list.map(c=>`<div class="card" onclick="openForm('${c.id}')" style="cursor:pointer"><b>${esc(c.name)}</b><div class="muted">${esc(c.phone||'No phone')} · ${esc(ago(c.last))}</div>${(c.dates||[]).map(d=>`<span class="pill">${label(d)}${d.who?' ('+esc(d.who)+')':''} · ${d.d} ${MONTHS[d.m-1]}</span>`).join('')}${c.notes?`<div class="muted" style="margin-top:6px">${esc(c.notes.length>110?c.notes.slice(0,110)+'…':c.notes)}</div>`:''}</div>`).join('')}
+function dateRow(d,i){return`<div class="dr" data-i="${i}"><div><select class="f-type">${['Birthday','Anniversary','Other'].map(t=>`<option${d.type===t?' selected':''}>${t}</option>`).join('')}</select></div>
+ <div><input class="f-who" placeholder="Whose? e.g. husband John" value="${esc(d.who)}"></div>
+ <div><select class="f-m">${MONTHS.map((m,k)=>`<option value="${k+1}"${d.m===k+1?' selected':''}>${m}</option>`).join('')}</select></div>
+ <div><input class="f-d" type="number" min="1" max="31" placeholder="Day" value="${d.d||''}"></div>
+ <div><input class="f-y" type="number" min="1900" max="2100" placeholder="Year (optional)" value="${d.y||''}"></div>
+ <div><button class="btn ghost sm" style="width:100%" onclick="rmDate(${i})">Remove</button></div></div>`}
+function openForm(id){const c=id?S.clients.find(x=>x.id===id):{id:null,name:'',phone:'',email:'',last:'',notes:'',dates:[]};S.form=JSON.parse(JSON.stringify(c));drawForm();$('#dlg').showModal()}
+function readForm(){const f=S.form;f.name=$('#f-name').value;f.phone=$('#f-phone').value;f.email=$('#f-email').value;f.last=$('#f-last').value;f.notes=$('#f-notes').value;
+ document.querySelectorAll('.dr').forEach(r=>{const d=f.dates[+r.dataset.i];d.type=r.querySelector('.f-type').value;d.who=r.querySelector('.f-who').value;d.m=+r.querySelector('.f-m').value;d.d=+r.querySelector('.f-d').value;d.y=+r.querySelector('.f-y').value||null})}
+function drawForm(){const f=S.form;$('#dlgc').innerHTML=`<h2 style="margin:0 0 4px" class="brand" >${f.id?'Edit client':'New client'}</h2>
+ <label>Client name *</label><input id="f-name" value="${esc(f.name)}" placeholder="e.g. Grace Nakato">
+ <label>Phone / WhatsApp</label><input id="f-phone" type="tel" value="${esc(f.phone)}" placeholder="e.g. 0772 123456">
+ <label>Email (optional)</label><input id="f-email" type="email" value="${esc(f.email)}">
+ <label>Last order date</label><input id="f-last" type="date" value="${esc(f.last)}">
+ <label>Important dates</label><div class="muted" style="margin-bottom:6px">Leave “Whose?” empty for the client’s own date. Use it when she orders for someone else, e.g. “husband John” or “daughter Amy”.</div>
+ ${f.dates.map(dateRow).join('')}<button class="btn ghost sm" onclick="addDate()">+ Add a date</button>
+ <label>Notes</label><textarea id="f-notes" rows="4" placeholder="Favourite flavours, allergies, delivery area, what she ordered and for whom…">${esc(f.notes)}</textarea>
+ <div id="err" class="muted" style="color:var(--warn);margin-top:8px"></div>
+ <div class="row" style="margin-top:14px"><div>${f.id?`<button class="btn ghost sm" id="del" onclick="delClient()">Delete</button>`:''}</div><div style="display:flex;gap:8px"><button class="btn ghost" onclick="$('#dlg').close()">Cancel</button><button class="btn" onclick="saveForm()">Save</button></div></div>`}
+function addDate(){readForm();S.form.dates.push({id:uid(),type:'Birthday',who:'',m:1,d:1,y:null,sent:null});drawForm()}
+function rmDate(i){readForm();S.form.dates.splice(i,1);drawForm()}
+function saveForm(){readForm();const f=S.form;if(!f.name.trim()){$('#err').textContent='Please enter the client’s name.';return}
+ if(f.dates.some(d=>!d.d||d.d<1||d.d>31)){$('#err').textContent='Please enter a valid day (1–31) for each date.';return}
+ f.name=f.name.trim();f.updatedAt=Date.now();if(f.id){const i=S.clients.findIndex(x=>x.id===f.id);S.clients[i]=f}else{f.id=uid();S.clients.push(f)}
+ save();$('#dlg').close();render()}
+function delClient(){const b=$('#del');if(b.dataset.s!=='1'){b.dataset.s='1';b.textContent='Tap again to delete';return}
+ S.dead.push({id:S.form.id,deleted:true,updatedAt:Date.now()});S.clients=S.clients.filter(x=>x.id!==S.form.id);save();$('#dlg').close();render()}
+function openBackup(){$('#dlgc').innerHTML=`<h2 class="brand" style="margin:0 0 6px">Backup</h2><div class="muted">An extra safety copy of all records. Save it to Google Drive or download a file. To restore, paste a backup’s text below and tap Restore.</div>
+ <textarea id="bk" rows="9" style="margin-top:10px;font-size:.8rem">${esc(JSON.stringify(S.clients))}</textarea><div id="bkm" class="muted" style="margin-top:6px"></div><div class="row" style="margin-top:10px;justify-content:flex-start"><button class="btn sm" onclick="driveBackup()">Save to Google Drive</button><button class="btn ghost sm" onclick="dlBackup()">Download file</button></div>
+ <div class="row" style="margin-top:12px"><button class="btn ghost" onclick="$('#dlg').close()">Close</button><div style="display:flex;gap:8px"><button class="btn ghost" onclick="restore()">Restore</button><button class="btn" onclick="copyBk()">Copy</button></div></div>`;$('#dlg').showModal()}
+function copyBk(){const t=$('#bk');t.select();let ok=false;try{ok=document.execCommand('copy')}catch(e){}$('#bkm').textContent=ok?'Copied.':'Text selected: press and hold to copy.'}
+function restore(){try{const a=JSON.parse($('#bk').value);if(!Array.isArray(a))throw 0;a.forEach(c=>{c.id=c.id||uid();c.updatedAt=Date.now()});S.clients=a;save();$('#dlg').close();render()}catch(e){$('#bkm').textContent='That text isn’t a valid backup.'}}
+let PASS='';try{PASS=localStorage.getItem('yl_pass')||''}catch(e){}
+let busy=false,tmr;
+const st=t=>{const e=$('#st');if(e)e.textContent=t};
+async function sync(){if(!PASS){st('Sync is off. Tap Sync to set it up.');return}if(busy)return;busy=true;
+ try{const r=await fetch('/api/sync',{method:'POST',headers:{'content-type':'application/json','x-passcode':PASS},body:JSON.stringify({records:[...S.clients,...S.dead]})});
+ if(r.status===401){st('Passcode not accepted. Tap Sync to re-enter it.');return}
+ if(!r.ok)throw 0;const j=await r.json();S.clients=j.records.filter(x=>!x.deleted);S.dead=j.records.filter(x=>x.deleted);persist();render();st('Synced at '+new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}))}
+ catch(e){st('Offline. Changes will sync when you’re back online.')}finally{busy=false}}
+function queueSync(){clearTimeout(tmr);tmr=setTimeout(sync,600)}
+function openSync(){$('#dlgc').innerHTML=`<h2 class="brand" style="margin:0 0 6px">Sync devices</h2><div class="muted">Enter the shared passcode (the SYNC_PASSCODE you set in Netlify) on every phone. Records then stay in step across all of them.</div><input id="pw" type="password" placeholder="Passcode" value="${esc(PASS)}" style="margin-top:10px"><div class="row" style="margin-top:12px"><button class="btn ghost" onclick="$('#dlg').close()">Close</button><button class="btn" onclick="setPass()">Save &amp; sync</button></div>`;$('#dlg').showModal()}
+function setPass(){PASS=$('#pw').value.trim();try{localStorage.setItem('yl_pass',PASS)}catch(e){}$('#dlg').close();sync()}
+setInterval(sync,20000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)sync()});addEventListener('online',sync);
+function loadGis(){return new Promise((ok,no)=>{if(window.google&&google.accounts)return ok();const s=document.createElement('script');s.src='https://accounts.google.com/gsi/client';s.onload=ok;s.onerror=no;document.head.appendChild(s)})}
+async function driveBackup(){const m=$('#bkm');const id=(window.YL_CONFIG||{}).googleClientId;if(!id){m.textContent='Google Drive isn’t set up yet (see README, step 4).';return}
+ try{await loadGis();google.accounts.oauth2.initTokenClient({client_id:id,scope:'https://www.googleapis.com/auth/drive.file',callback:async t=>{if(!t.access_token){m.textContent='Google sign-in was cancelled.';return}if(!google.accounts.oauth2.hasGrantedAllScopes(t,'https://www.googleapis.com/auth/drive.file')){m.textContent='Drive permission was not ticked. Try again and tick the box allowing this app to create files in your Google Drive.';return}
+ const name='YummyLayers-clients-'+new Date().toISOString().slice(0,10)+'.json',b='yl_b';
+ const body=`--${b}\r\nContent-Type: application/json\r\n\r\n${JSON.stringify({name,mimeType:'application/json'})}\r\n--${b}\r\nContent-Type: application/json\r\n\r\n${JSON.stringify(S.clients)}\r\n--${b}--`;
+ const r=await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart',{method:'POST',headers:{Authorization:'Bearer '+t.access_token,'Content-Type':'multipart/related; boundary='+b},body});
+ let x='';if(!r.ok){try{const j=await r.json();x=' – '+((j.error&&j.error.message)||'')+' '+(((j.error||{}).errors||[]).map(e=>e.reason).join(','))}catch(e){}}m.textContent=r.ok?'Saved to your Google Drive as '+name:'Drive upload failed ('+r.status+')'+x}}).requestAccessToken({prompt:'consent'})}catch(e){m.textContent='Couldn’t reach Google. Check your connection.'}}
+function dlBackup(){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(S.clients)],{type:'application/json'}));a.download='YummyLayers-clients-'+new Date().toISOString().slice(0,10)+'.json';a.click()}
+let dip;addEventListener('beforeinstallprompt',e=>{e.preventDefault();dip=e;$('#inst').style.display=''});
+function doInstall(){if(dip){dip.prompt();dip=null;$('#inst').style.display='none'}}
+if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(()=>{}));
+load();render();sync();
+</script>
+</body>
+</html>
