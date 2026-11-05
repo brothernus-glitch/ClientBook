@@ -52,7 +52,7 @@ h3{margin:18px 0 8px;font-size:.8rem;letter-spacing:.12em;text-transform:upperca
 <header><img src="/logo.jpg" alt="Yummy Layers – Just Dough It" style="width:120px;height:120px;border-radius:50%"><div class="tag">CLIENT BOOK</div></header>
 <div class="tabs"><button class="tab on" id="t-up" onclick="setView('up')">Coming up</button><button class="tab" id="t-cl" onclick="setView('cl')">Clients</button></div>
 <div id="main"></div>
-<div class="row" style="margin-top:20px"><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn ghost sm" onclick="openBackup()">Backup</button><button class="btn ghost sm" onclick="openSync()">Sync</button><button class="btn ghost sm" id="inst" style="display:none" onclick="doInstall()">Install app</button></div><button class="btn sm" onclick="openForm()">+ New client</button></div><div class="muted" id="st" style="margin-top:10px;text-align:center"></div>
+<div class="row" style="margin-top:20px"><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn ghost sm" onclick="openBackup()">Backup</button><button class="btn ghost sm" onclick="openSync()">Sync</button><button class="btn ghost sm" id="inst" style="display:none" onclick="doInstall()">Install app</button></div><button class="btn sm" onclick="openForm()">+ New client</button></div><div class="muted" id="st" style="margin-top:10px;text-align:center"></div><div class="muted" style="text-align:center;font-size:.75rem;margin-top:4px">Version 3</div>
 </div>
 
 <div id="pr"></div>
@@ -88,7 +88,7 @@ function renderUp(){
  items.forEach(({c,dt,o})=>{const num=waNum(c.phone);const done=dt.sent===o.o.yr;const yrs=dt.y?` · turning ${o.o.yr-dt.y}`:'';const who=dt.who?` · ${esc(dt.who)}`:'';
   h+=`<div class="card"><div class="row"><div><b>${esc(c.name)}</b><div class="muted">${label(dt)}${who}${yrs}</div><div class="muted">${fmt(o.o)} · ${esc(ago(c.last))}</div></div><div class="days ${o.days<=3?'soon':''}">${o.days===0?'Today':o.days===1?'Tomorrow':o.days+' days'}</div></div>
   <div class="row" style="margin-top:10px;justify-content:flex-start">${num?`<a class="btn sm" style="text-decoration:none" target="_blank" rel="noopener" href="https://wa.me/${num}?text=${encodeURIComponent(msg(c,dt,o))}">WhatsApp</a>`:`<span class="muted">No phone saved</span>`}
-  <button class="btn ghost sm" onclick="markSent('${c.id}','${dt.id}',${o.o.yr})">${done?'Sent ✓ (undo)':'Mark as sent'}</button><button class="btn ghost sm" onclick="openForm('${c.id}')">Open</button></div></div>`});
+  <button class="btn ghost sm" onclick="markSent('${c.id}','${dt.id}',${o.o.yr})">${done?'Sent ✓ (undo)':'Mark as sent'}</button><button class="btn ghost sm" onclick="openView('${c.id}')">Open</button></div></div>`});
  $('#main').innerHTML=h}
 function markSent(cid,did,yr){const c=S.clients.find(x=>x.id===cid);const d=c.dates.find(x=>x.id===did);d.sent=d.sent===yr?null:yr;c.updatedAt=Date.now();save();render()}
 function renderCl(){
@@ -100,14 +100,24 @@ function renderList(){
  const q=S.q.toLowerCase();let list=S.clients.filter(c=>(!q||(c.name+' '+(c.phone||'')+' '+(c.notes||'')).toLowerCase().includes(q))&&(!S.quiet||daysSince(c.last)>=90)).sort((a,b)=>a.name.localeCompare(b.name));
  const el=$('#list');if(!el)return;
  if(!list.length){el.innerHTML=`<div class="empty">${S.clients.length?'No matches.':'No clients yet. Tap “+ New client” to add the first one.'}</div>`;return}
- el.innerHTML=list.map(c=>`<div class="card" onclick="openForm('${c.id}')" style="cursor:pointer"><b>${esc(c.name)}</b><div class="muted">${esc(c.phone||'No phone')} · ${esc(ago(c.last))}</div>${(c.dates||[]).map(d=>`<span class="pill">${label(d)}${d.who?' ('+esc(d.who)+')':''} · ${d.d} ${MONTHS[d.m-1]}</span>`).join('')}${c.notes?`<div class="muted" style="margin-top:6px">${esc(c.notes.length>110?c.notes.slice(0,110)+'…':c.notes)}</div>`:''}</div>`).join('')}
+ el.innerHTML=list.map(c=>`<div class="card" onclick="openView('${c.id}')" style="cursor:pointer"><b>${esc(c.name)}</b><div class="muted">${esc(c.phone||'No phone')} · ${esc(ago(c.last))}</div>${(c.dates||[]).map(d=>`<span class="pill">${label(d)}${d.who?' ('+esc(d.who)+')':''} · ${d.d} ${MONTHS[d.m-1]}</span>`).join('')}${c.notes?`<div class="muted" style="margin-top:6px">${esc(c.notes.length>110?c.notes.slice(0,110)+'…':c.notes)}</div>`:''}</div>`).join('')}
 function dateRow(d,i){return`<div class="dr" data-i="${i}"><div><select class="f-type">${['Birthday','Anniversary','Other'].map(t=>`<option${d.type===t?' selected':''}>${t}</option>`).join('')}</select></div>
  <div><input class="f-who" placeholder="Whose? e.g. husband John" value="${esc(d.who)}"></div>
  <div><select class="f-m">${MONTHS.map((m,k)=>`<option value="${k+1}"${d.m===k+1?' selected':''}>${m}</option>`).join('')}</select></div>
  <div><input class="f-d" type="number" min="1" max="31" placeholder="Day" value="${d.d||''}"></div>
  <div><input class="f-y" type="number" min="1900" max="2100" placeholder="Year (optional)" value="${d.y||''}"></div>
  <div><button class="btn ghost sm" style="width:100%" onclick="rmDate(${i})">Remove</button></div></div>`}
-function openForm(id){const c=id?S.clients.find(x=>x.id===id):{id:null,name:'',phone:'',email:'',last:'',notes:'',dates:[]};S.form=JSON.parse(JSON.stringify(c));drawForm();$('#dlg').showModal()}
+function openView(id){const c=S.clients.find(x=>x.id===id);if(!c)return;const num=waNum(c.phone);
+ const ds=(c.dates||[]).map(d=>{const o=nextOcc(d);return`<div style="margin:4px 0"><b>${label(d)}${d.who&&d.who.trim()?' · '+esc(d.who.trim()):''}</b>: ${d.d} ${MONTHS[d.m-1]}${d.y?' '+d.y:''}<span class="muted"> · ${o.days===0?'today':o.days===1?'tomorrow':'in '+o.days+' days'}</span></div>`}).join('')||'<span class="muted">None saved</span>';
+ $('#dlgc').innerHTML=`<div class="row"><h2 class="brand" style="margin:0">${esc(c.name)}</h2><button class="btn ghost sm" aria-label="Edit client" onclick="openForm('${c.id}')">✎ Edit</button></div>
+ <div class="card" style="margin-top:12px"><div class="muted">Phone</div><div>${esc(c.phone||'Not saved')}</div>${num?`<a class="btn sm" style="text-decoration:none;display:inline-block;margin-top:6px" target="_blank" rel="noopener" href="https://wa.me/${num}">WhatsApp</a>`:''}
+ <div class="muted" style="margin-top:12px">Email</div><div>${esc(c.email||'Not saved')}</div>
+ <div class="muted" style="margin-top:12px">Last order</div><div>${c.last?esc(c.last)+' <span class="muted">· '+esc(ago(c.last).replace('Last order: ',''))+'</span>':'No order recorded'}</div></div>
+ <div class="card"><div class="muted" style="margin-bottom:4px">Important dates</div>${ds}</div>
+ <div class="card"><div class="muted" style="margin-bottom:4px">Notes</div><div style="white-space:pre-wrap">${esc(c.notes||'No notes')}</div></div>
+ <div class="row" style="margin-top:10px;justify-content:flex-end"><button class="btn" onclick="$('#dlg').close()">Close</button></div>`;
+ if(!$('#dlg').open)$('#dlg').showModal()}
+function openForm(id){const c=id?S.clients.find(x=>x.id===id):{id:null,name:'',phone:'',email:'',last:'',notes:'',dates:[]};S.form=JSON.parse(JSON.stringify(c));drawForm();if(!$('#dlg').open)$('#dlg').showModal()}
 function readForm(){const f=S.form;f.name=$('#f-name').value;f.phone=$('#f-phone').value;f.email=$('#f-email').value;f.last=$('#f-last').value;f.notes=$('#f-notes').value;
  document.querySelectorAll('.dr').forEach(r=>{const d=f.dates[+r.dataset.i];d.type=r.querySelector('.f-type').value;d.who=r.querySelector('.f-who').value;d.m=+r.querySelector('.f-m').value;d.d=+r.querySelector('.f-d').value;d.y=+r.querySelector('.f-y').value||null})}
 function drawForm(){const f=S.form;$('#dlgc').innerHTML=`<h2 style="margin:0 0 4px" class="brand" >${f.id?'Edit client':'New client'}</h2>
@@ -129,7 +139,7 @@ function saveForm(){readForm();const f=S.form;if(!f.name.trim()){$('#err').textC
 function delClient(){const b=$('#del');if(b.dataset.s!=='1'){b.dataset.s='1';b.textContent='Tap again to delete';return}
  S.dead.push({id:S.form.id,deleted:true,updatedAt:Date.now()});S.clients=S.clients.filter(x=>x.id!==S.form.id);save();$('#dlg').close();render()}
 function openBackup(){$('#dlgc').innerHTML=`<h2 class="brand" style="margin:0 0 6px">Backup</h2><div class="muted">An extra safety copy of all records. Save it to Google Drive or download a file. To restore, paste a backup’s text below and tap Restore.</div>
- <textarea id="bk" rows="9" style="margin-top:10px;font-size:.8rem">${esc(JSON.stringify(S.clients))}</textarea><div id="bkm" class="muted" style="margin-top:6px"></div><div class="row" style="margin-top:10px;justify-content:flex-start"><button class="btn sm" onclick="driveBackup()">Save to Google Drive</button><button class="btn ghost sm" onclick="dlBackup()">Backup file</button><button class="btn ghost sm" onclick="exportXlsx()">Excel</button><button class="btn ghost sm" onclick="exportPdf()">PDF</button></div>
+ <textarea id="bk" rows="9" style="margin-top:10px;font-size:.8rem">${esc(JSON.stringify(S.clients))}</textarea><div id="bkm" class="muted" style="margin-top:6px"></div><div class="row" style="margin-top:10px;justify-content:flex-start"><button class="btn sm" onclick="driveBackup()">Save to Google Drive</button><button class="btn ghost sm" onclick="dlBackup()">Backup (.json)</button><button class="btn ghost sm" onclick="exportXlsx()">Excel (.xlsx)</button><button class="btn ghost sm" onclick="exportPdf()">PDF</button></div>
  <div class="row" style="margin-top:12px"><button class="btn ghost" onclick="$('#dlg').close()">Close</button><div style="display:flex;gap:8px"><button class="btn ghost" onclick="restore()">Restore</button><button class="btn" onclick="copyBk()">Copy</button></div></div>`;$('#dlg').showModal()}
 function copyBk(){const t=$('#bk');t.select();let ok=false;try{ok=document.execCommand('copy')}catch(e){}$('#bkm').textContent=ok?'Copied.':'Text selected: press and hold to copy.'}
 function restore(){try{const a=JSON.parse($('#bk').value);if(!Array.isArray(a))throw 0;a.forEach(c=>{c.id=c.id||uid();c.updatedAt=Date.now()});S.clients=a;save();$('#dlg').close();render()}catch(e){$('#bkm').textContent='That text isn’t a valid backup.'}}
