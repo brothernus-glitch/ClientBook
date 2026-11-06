@@ -52,7 +52,7 @@ h3{margin:18px 0 8px;font-size:.8rem;letter-spacing:.12em;text-transform:upperca
 <header><img src="/logo.jpg" alt="Yummy Layers – Just Dough It" style="width:120px;height:120px;border-radius:50%"><div class="tag">CLIENT BOOK</div></header>
 <div class="tabs"><button class="tab on" id="t-up" onclick="setView('up')">Coming up</button><button class="tab" id="t-cl" onclick="setView('cl')">Clients</button></div>
 <div id="main"></div>
-<div class="row" style="margin-top:20px"><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn ghost sm" onclick="openBackup()">Backup</button><button class="btn ghost sm" onclick="openSync()">Sync</button><button class="btn ghost sm" id="inst" style="display:none" onclick="doInstall()">Install app</button></div><button class="btn sm" onclick="openForm()">+ New client</button></div><div class="muted" id="st" style="margin-top:10px;text-align:center"></div><div class="muted" style="text-align:center;font-size:.75rem;margin-top:4px">Version 3</div>
+<div class="row" style="margin-top:20px"><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn ghost sm" onclick="openBackup()">Backup</button><button class="btn ghost sm" onclick="openSync()">Sync</button><button class="btn ghost sm" id="inst" style="display:none" onclick="doInstall()">Install app</button></div><button class="btn sm" onclick="openForm()">+ New client</button></div><div class="muted" id="st" style="margin-top:10px;text-align:center"></div><div class="muted" style="text-align:center;font-size:.75rem;margin-top:4px">Version 4</div>
 </div>
 
 <div id="pr"></div>
@@ -73,10 +73,10 @@ function nextOcc(dt){const y=today.getFullYear();let o=new Date(y,dt.m-1,dt.d);i
 const fmt=o=>o.toLocaleDateString('en-GB',{day:'numeric',month:'short'});
 function ago(s){if(!s)return'No order recorded';const d=Math.round((today-new Date(s+'T00:00:00'))/864e5);if(d<0)return'Order on '+s;if(d===0)return'Last order: today';if(d<60)return`Last order: ${d} day${d==1?'':'s'} ago`;if(d<730)return`Last order: ${Math.round(d/30)} months ago`;return`Last order: ${Math.round(d/365)} years ago`}
 function daysSince(s){return s?Math.round((today-new Date(s+'T00:00:00'))/864e5):99999}
-function label(dt){return dt.type==='Other'?'Special day':dt.type}
+function label(dt){return dt.type==='Other'?((dt.label||'').trim()||'Special day'):dt.type}
 function msg(c,dt,occ){const first=c.name.split(' ')[0];const own=!dt.who||/^(self|herself|himself|her|him|me|client)$/i.test(dt.who.trim());const when=fmt(occ.o);
- if(own){if(dt.type==='Birthday')return`Happy birthday ${first}! 🎂 Wishing you a day as sweet as cake. With love, Yummy Layers`;if(dt.type==='Anniversary')return`Happy anniversary ${first}! 💙 Wishing you many more sweet years. With love, Yummy Layers`;return`Hello ${first}, thinking of you on your special day (${when}). Warm wishes from Yummy Layers 🎂`}
- const w=dt.who.trim();const what=dt.type==='Birthday'?`${w}’s birthday`:dt.type==='Anniversary'?`${w}’s anniversary`:`${w}’s special day`;
+ if(own){if(dt.type==='Birthday')return`Happy birthday ${first}! 🎂 Wishing you a day as sweet as cake. With love, Yummy Layers`;if(dt.type==='Anniversary')return`Happy anniversary ${first}! 💙 Wishing you many more sweet years. With love, Yummy Layers`;return`Hello ${first}, thinking of you on your ${label(dt).toLowerCase()} (${when}). Warm wishes from Yummy Layers 🎂`}
+ const w=dt.who.trim();const what=dt.type==='Birthday'?`${w}’s birthday`:dt.type==='Anniversary'?`${w}’s anniversary`:`${w}’s ${label(dt).toLowerCase()}`;
  return`Hello ${first}, we remembered that ${what} is coming up on ${when}. 🎂 Would you like us to bake something special? – Yummy Layers`}
 function setView(v){S.view=v;$('#t-up').classList.toggle('on',v==='up');$('#t-cl').classList.toggle('on',v==='cl');render()}
 function render(){S.view==='up'?renderUp():renderCl()}
@@ -101,8 +101,9 @@ function renderList(){
  const el=$('#list');if(!el)return;
  if(!list.length){el.innerHTML=`<div class="empty">${S.clients.length?'No matches.':'No clients yet. Tap “+ New client” to add the first one.'}</div>`;return}
  el.innerHTML=list.map(c=>`<div class="card" onclick="openView('${c.id}')" style="cursor:pointer"><b>${esc(c.name)}</b><div class="muted">${esc(c.phone||'No phone')} · ${esc(ago(c.last))}</div>${(c.dates||[]).map(d=>`<span class="pill">${label(d)}${d.who?' ('+esc(d.who)+')':''} · ${d.d} ${MONTHS[d.m-1]}</span>`).join('')}${c.notes?`<div class="muted" style="margin-top:6px">${esc(c.notes.length>110?c.notes.slice(0,110)+'…':c.notes)}</div>`:''}</div>`).join('')}
-function dateRow(d,i){return`<div class="dr" data-i="${i}"><div><select class="f-type">${['Birthday','Anniversary','Other'].map(t=>`<option${d.type===t?' selected':''}>${t}</option>`).join('')}</select></div>
+function dateRow(d,i){return`<div class="dr" data-i="${i}"><div><select class="f-type" onchange="this.closest('.dr').querySelector('.f-lblw').style.display=this.value==='Other'?'':'none'">${['Birthday','Anniversary','Other'].map(t=>`<option${d.type===t?' selected':''}>${t}</option>`).join('')}</select></div>
  <div><input class="f-who" placeholder="Whose? e.g. husband John" value="${esc(d.who)}"></div>
+ <div class="full f-lblw" style="${d.type==='Other'?'':'display:none'}"><input class="f-lbl" placeholder="What is it? e.g. Graduation day" value="${esc(d.label||'')}"></div>
  <div><select class="f-m">${MONTHS.map((m,k)=>`<option value="${k+1}"${d.m===k+1?' selected':''}>${m}</option>`).join('')}</select></div>
  <div><input class="f-d" type="number" min="1" max="31" placeholder="Day" value="${d.d||''}"></div>
  <div><input class="f-y" type="number" min="1900" max="2100" placeholder="Year (optional)" value="${d.y||''}"></div>
@@ -119,10 +120,10 @@ function openView(id){const c=S.clients.find(x=>x.id===id);if(!c)return;const nu
  if(!$('#dlg').open)$('#dlg').showModal()}
 function openForm(id){const c=id?S.clients.find(x=>x.id===id):{id:null,name:'',phone:'',email:'',last:'',notes:'',dates:[]};S.form=JSON.parse(JSON.stringify(c));drawForm();if(!$('#dlg').open)$('#dlg').showModal()}
 function readForm(){const f=S.form;f.name=$('#f-name').value;f.phone=$('#f-phone').value;f.email=$('#f-email').value;f.last=$('#f-last').value;f.notes=$('#f-notes').value;
- document.querySelectorAll('.dr').forEach(r=>{const d=f.dates[+r.dataset.i];d.type=r.querySelector('.f-type').value;d.who=r.querySelector('.f-who').value;d.m=+r.querySelector('.f-m').value;d.d=+r.querySelector('.f-d').value;d.y=+r.querySelector('.f-y').value||null})}
+ document.querySelectorAll('.dr').forEach(r=>{const d=f.dates[+r.dataset.i];d.type=r.querySelector('.f-type').value;d.who=r.querySelector('.f-who').value;d.label=r.querySelector('.f-lbl').value;d.m=+r.querySelector('.f-m').value;d.d=+r.querySelector('.f-d').value;d.y=+r.querySelector('.f-y').value||null})}
 function drawForm(){const f=S.form;$('#dlgc').innerHTML=`<h2 style="margin:0 0 4px" class="brand" >${f.id?'Edit client':'New client'}</h2>
  <label>Client name *</label><input id="f-name" value="${esc(f.name)}" placeholder="e.g. Grace Nakato">
- <label>Phone / WhatsApp</label><input id="f-phone" type="tel" value="${esc(f.phone)}" placeholder="e.g. 0772 123456">
+ <div class="row" style="margin-top:12px"><label style="margin:0">Phone / WhatsApp</label><button class="btn ghost sm" onclick="pickContact()">📇 Pick from contacts</button></div><div style="height:4px"></div><input id="f-phone" type="tel" value="${esc(f.phone)}" placeholder="e.g. 0772 123456">
  <label>Email (optional)</label><input id="f-email" type="email" value="${esc(f.email)}">
  <label>Last order date</label><input id="f-last" type="date" value="${esc(f.last)}">
  <label>Important dates</label><div class="muted" style="margin-bottom:6px">Leave “Whose?” empty for the client’s own date. Use it when she orders for someone else, e.g. “husband John” or “daughter Amy”.</div>
@@ -130,6 +131,9 @@ function drawForm(){const f=S.form;$('#dlgc').innerHTML=`<h2 style="margin:0 0 4
  <label>Notes</label><textarea id="f-notes" rows="4" placeholder="Favourite flavours, allergies, delivery area, what she ordered and for whom…">${esc(f.notes)}</textarea>
  <div id="err" class="muted" style="color:var(--warn);margin-top:8px"></div>
  <div class="row" style="margin-top:14px"><div>${f.id?`<button class="btn ghost sm" id="del" onclick="delClient()">Delete</button>`:''}</div><div style="display:flex;gap:8px"><button class="btn ghost" onclick="$('#dlg').close()">Cancel</button><button class="btn" onclick="saveForm()">Save</button></div></div>`}
+async function pickContact(){const e=$('#err');if(!('contacts' in navigator&&navigator.contacts.select)){e.textContent='Picking from contacts works in Chrome on Android. On iPhone or a laptop, please type the number in.';return}
+ try{const r=await navigator.contacts.select(['name','tel'],{multiple:false});if(!r.length)return;readForm();const c=r[0];if(c.name&&c.name[0]&&!S.form.name.trim())S.form.name=c.name[0];if(c.tel&&c.tel[0])S.form.phone=c.tel[0];drawForm()}
+ catch(x){e.textContent='Couldn’t open your contacts. Check that Chrome is allowed to access them.'}}
 function addDate(){readForm();S.form.dates.push({id:uid(),type:'Birthday',who:'',m:1,d:1,y:null,sent:null});drawForm()}
 function rmDate(i){readForm();S.form.dates.splice(i,1);drawForm()}
 function saveForm(){readForm();const f=S.form;if(!f.name.trim()){$('#err').textContent='Please enter the client’s name.';return}
